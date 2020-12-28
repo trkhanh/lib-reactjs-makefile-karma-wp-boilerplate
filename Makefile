@@ -67,3 +67,25 @@ lint:
 
 docs: build-docs
 	mkdocs serve
+
+# Rules for build and publish
+
+check-working-tree:
+	@[ -z "`git status -s`" ] && \
+	echo "Stopping publish. There are change ot commit or discard" || echo "Worktree is clean."
+
+complie:
+	@echo "[Compliling source]"
+	$(BABEL) src --out-dir lib
+
+build: complie
+	@echo "[Building dists]"
+	@npm webpack --config ./scripts/webpack.dist.config.js
+
+pre-release-commit:
+	git commit --allow-empty -m "Release v$(VERSION)."
+
+changelog:
+	@echo "[Updating CHANGELOG.md $(CURRENT_VERSION) > $(VERSION)]"
+	python ./scripts/changelog.py -a $(VERSION) > CHANGELOG.md
+
