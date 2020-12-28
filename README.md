@@ -1,4 +1,4 @@
-# 🎁 Unix Libary style with reactjs makefile karmajs Webpkack boilerplate
+# 🎁 [Unix Libary style] With reactjs makefile karmajs Webpack boilerplate. 🐳 Devops friendly 
 
 
 ## Getting started
