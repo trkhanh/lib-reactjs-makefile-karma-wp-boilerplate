@@ -89,3 +89,68 @@ changelog:
 	@echo "[Updating CHANGELOG.md $(CURRENT_VERSION) > $(VERSION)]"
 	python ./scripts/changelog.py -a $(VERSION) > CHANGELOG.md
 
+update-package-version:
+	cat package.json | jq '.version="$(VERSION)"' > tmp; mv -f tmp package.json
+
+release-commit: pre-release-commit update-package-version changelog
+	@git add .
+	@git commit --amend -m "`git log -1 --format=%s`"
+
+release-tag:
+	git tag "v$(VERSION)" -m "`python ./scripts/changelog.py -c $(VERSION)`"
+
+
+publish-version: release-commit release-tag
+	@echo "[Publishing]"
+	git push $(REMOTE) "$(BRANCH)" "v$(VERSION)"
+	npm publish
+
+pre-publish: clean
+pre-build: deps-project tests-single-run build
+
+publish: check-working-tree pre-publish pre-build publish-version publish-finished
+
+publish-finished: clean
+
+# Rules for documentation
+
+init-docs-repo:
+	@mkdir _book
+
+build-docs:
+	@echo "[Building documentation]"
+	@rm -rf _book
+	@mkdocs build
+
+pre-publish-docs: clean-docs init-docs-repo deps-docs
+
+publish-docs: clean pre-publish-docs build-docs
+	@echo "[Publishing docs]"
+	@make -C _book -f ../Makefile _publish-docs
+
+_publish-docs: 
+	git init .
+	git commit --allow-empty -m 'update book'
+	git checkout -b gh-pages
+	touch .nojekyll
+	git add .
+	git commit -am 'update book'
+	git push git@github.com:reactjs/react-modal gh-pages --force
+
+
+# Run for a full publish
+
+publish-all: publish publish-docs
+
+# Rules for clean up
+
+clean-docs:
+	@rm -rf _book
+
+clean-coverage:
+	@rm -rf ./coverage/*
+
+clean-build:
+	@rm -rf lib/*
+
+clean: clean-build clean-docs clean-coverage
